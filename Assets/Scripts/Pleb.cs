@@ -9,6 +9,9 @@ public class Pleb : MonoBehaviour {
 	public float changeDirectionDelay;
 	public Rigidbody rb;
 	public int health;
+	public bool canGetHurt;
+	public int cooldownFrames;
+	public AudioSource audio;
 
 	public Color[] originalColors;
 	public Material[] materials; //All the materials of this and its children
@@ -26,6 +29,8 @@ public class Pleb : MonoBehaviour {
 			originalColors [i] = materials [i].color;
 		}
 		InvokeRepeating ("CheckOffScreen", 0f, 2f);
+		canGetHurt = true;
+		cooldownFrames = 0;
 	}
 
 	// Use this for initialization
@@ -84,34 +89,62 @@ public class Pleb : MonoBehaviour {
 			//print ("no damage flashes left!");
 			UnshowDamage ();
 		}
+
+		if (cooldownFrames > 0) {
+			cooldownFrames--;
+		}
 	}
 
 	void OnCollisionEnter(Collision coll) {
 		rb.velocity *= -1;
 		theta = (theta + 180) % 360;
-		if (coll.gameObject.tag == "Enemy") {
+		audio.clip = GameController.gc.collide;
+		audio.Play ();
+		if (coll.gameObject.tag == "Enemy" && cooldownFrames == 0) {
 			ShowDamage (5);
 			health--;
+			//canGetHurt = false;
+			cooldownFrames = 24;
 			if (health <= 0) {
 				foreach (GameObject go in enemiesTargetingMe) {
-					go.GetComponent<Enemy> ().target = new Vector3 (-1f, -1f, -1f);
+					if (go != null) {
+						go.GetComponent<Enemy> ().target = new Vector3 (-1f, -1f, -1f);
+					}
 				}
 				enemiesTargetingMe.Clear ();
 				GameController.gc.plebs.Remove (this.gameObject);
 				Destroy (this.gameObject);
+				GameController.gc.num_points -= 5;
+				GameController.gc.audioPlayer.clip = GameController.gc.died;
+				GameController.gc.audioPlayer.Play ();
+				GameController.gc.ShowDamage (5);
 			}
 		}
 	}
 
+	void OnCollisionLeave(Collision coll) {
+		if (coll.gameObject.tag == "Enemy") {
+			//canGetHurt = true;
+		}
+	}
+
 	void CheckOffScreen() {
+		//print ("checking offscreen for plebs");
+		//print ("offscreen test " + Utils.ScreenBoundsCheck(GetComponent<Collider>().bounds, BoundsTest.offScreen));
 		if (Utils.ScreenBoundsCheck(GetComponent<Collider>().bounds, BoundsTest.offScreen) != Vector3.zero) {
 			//...then destroy this GameObject
 			foreach (GameObject go in enemiesTargetingMe) {
-				go.GetComponent<Enemy> ().target = new Vector3 (-1f, -1f, -1f);
+				if (go != null) {
+					go.GetComponent<Enemy> ().target = new Vector3 (-1f, -1f, -1f);
+				}
 			}
 			enemiesTargetingMe.Clear ();
 			GameController.gc.plebs.Remove(this.gameObject);
 			Destroy(this.gameObject);
+			GameController.gc.num_points -= 5;
+			GameController.gc.audioPlayer.clip = GameController.gc.died;
+			GameController.gc.audioPlayer.Play ();
+			GameController.gc.ShowDamage (5);
 		}
 	}
 

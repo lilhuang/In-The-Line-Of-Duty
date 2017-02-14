@@ -105,6 +105,7 @@ public class Enemy2 : MonoBehaviour {
 			//...then destroy this GameObject
 			GameController.gc.enemies.Remove(this.gameObject);
 			Destroy(this.gameObject);
+//			SetTarget();
 		}
 	}
 

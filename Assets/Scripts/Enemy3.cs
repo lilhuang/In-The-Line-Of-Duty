@@ -42,7 +42,7 @@ public class Enemy3 : MonoBehaviour {
 				resetTargetDelay = 24f;
 			}
 		} else {
-			print ("goin' after mah target");
+			//print ("goin' after mah target");
 			float step = speed * Time.deltaTime;
 			transform.position = Vector3.MoveTowards (transform.position, target, step);
 		}
@@ -72,6 +72,8 @@ public class Enemy3 : MonoBehaviour {
 			GameController.gc.enemies.Remove(this.gameObject);
 			Destroy(this.gameObject);
 			GameController.gc.num_points += 5;
+			GameController.gc.audioPlayer.clip = GameController.gc.morePoints;
+			GameController.gc.audioPlayer.Play ();
 		}
 
 	}
@@ -103,6 +105,8 @@ public class Enemy3 : MonoBehaviour {
 		if (coll.gameObject.tag == "Line") {
 			target = new Vector3 (-1f, -1f, -1f);
 			GameController.gc.num_points += 1;
+			GameController.gc.audioPlayer.clip = GameController.gc.morePoints;
+			GameController.gc.audioPlayer.Play ();
 			num_cooldown_frames = total_cooldown_frames;
 			GetComponent<Rigidbody> ().velocity *= -2;
 			GameObject line_coll = coll.gameObject.GetComponent<LineSegment> ().line_parent;
@@ -117,6 +121,8 @@ public class Enemy3 : MonoBehaviour {
 			print ("hit a pleb");
 			GetComponent<Rigidbody> ().velocity *= -1;
 			target = new Vector3 (-1f, -1f, -1f);
+			GameController.gc.audioPlayer.clip = GameController.gc.hitEnemy;
+			GameController.gc.audioPlayer.Play ();
 		}
 	}
 
@@ -125,6 +131,7 @@ public class Enemy3 : MonoBehaviour {
 			//...then destroy this GameObject
 			GameController.gc.enemies.Remove(this.gameObject);
 			Destroy(this.gameObject);
+//			SetTarget();
 		}
 	}
 

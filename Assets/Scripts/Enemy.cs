@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class Enemy : MonoBehaviour {
 	public Bounds bounds;
@@ -9,8 +10,7 @@ public class Enemy : MonoBehaviour {
 	public Vector3 target;
 	public float speed;
 	public float resetTargetDelay;
-	public int total_cooldown_frames;
-	public int num_cooldown_frames;
+	public bool canIncreasePoints;
 
 	public float search_radius = 20f;
 	public Vector3[] directions;
@@ -25,8 +25,7 @@ public class Enemy : MonoBehaviour {
 		resetTargetDelay = 24f;
 		target = new Vector3 (-1f, -1f, -1f);
 		directions = all_directions ();
-		num_cooldown_frames = 0;
-		total_cooldown_frames = 24;
+		canIncreasePoints = true;
 	}
 	
 	// Update is called once per frame
@@ -39,14 +38,10 @@ public class Enemy : MonoBehaviour {
 				resetTargetDelay = 24f;
 			}
 		} else {
-			print ("goin' after mah target");
+			//print ("goin' after mah target");
 			target = pleb_target.transform.position;
 			float step = speed * Time.deltaTime;
 			transform.position = Vector3.MoveTowards (transform.position, target, step);
-		}
-
-		if (num_cooldown_frames > 0) {
-			num_cooldown_frames--;
 		}
 
 		bool surrounded = true;
@@ -70,8 +65,9 @@ public class Enemy : MonoBehaviour {
 			GameController.gc.enemies.Remove(this.gameObject);
 			Destroy(this.gameObject);
 			GameController.gc.num_points += 5;
+			GameController.gc.audioPlayer.clip = GameController.gc.morePoints;
+			GameController.gc.audioPlayer.Play ();
 		}
-		
 	}
 
 	void SetNewTarget() {
@@ -85,16 +81,30 @@ public class Enemy : MonoBehaviour {
 	}
 
 	void OnCollisionEnter(Collision coll) {
-		if (coll.gameObject.tag == "Line") {
+		if (coll.gameObject.tag == "Line" && canIncreasePoints) {
 			target = new Vector3 (-1f, -1f, -1f);
 			pleb_target = null;
 			GameController.gc.num_points += 1;
-			num_cooldown_frames = total_cooldown_frames;
-		} else if (coll.gameObject.tag == "Pleb" && num_cooldown_frames == 0) {
+			GameController.gc.audioPlayer.clip = GameController.gc.morePoints;
+			canIncreasePoints = false;
+			if (!GameController.gc.hasShownBlockIncrease) {
+				GameController.gc.pointIncreaseDirection_block.enabled = true;
+				GameController.gc.hasShownBlockIncrease = true;
+				GameController.gc.showInitDirectionsFrames = 120;
+			}
+		} else if (coll.gameObject.tag == "Pleb") {
 			print ("hit a pleb");
+			GameController.gc.audioPlayer.clip = GameController.gc.hitEnemy;
+			GameController.gc.audioPlayer.Play ();
 			GetComponent<Rigidbody> ().velocity *= -5;
 			target = new Vector3 (-1f, -1f, -1f);
 			pleb_target = null;
+		}
+	}
+
+	void OnCollisionLeave(Collision coll) {
+		if (coll.gameObject.tag == "Line") {
+			canIncreasePoints = true;
 		}
 	}
 

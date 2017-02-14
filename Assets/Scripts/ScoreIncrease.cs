@@ -20,7 +20,7 @@ public class ScoreIncrease : MonoBehaviour {
 
 	public void IncrementScore() {
 		while (number < finalScore) {
-			scoreText.text = number.ToString();
+			scoreText.text = "Your score: " + number.ToString();
 			number++;
 			Invoke ("IncrementScore", 0.01f);
 		}

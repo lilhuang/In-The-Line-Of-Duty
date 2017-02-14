@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class Pickup : MonoBehaviour {
 	float rot = 0f;
@@ -71,11 +72,11 @@ public class Pickup : MonoBehaviour {
 				GameController.gc.CreatePlebs (GameController.gc.plebs.Count);
 			} else if (this.gameObject.tag == "blast") {
 				GameController.gc.num_blasts++;
-				foreach (GameObject go in GameController.gc.enemies) {
-					Destroy (go);
-				}
-				GameController.gc.enemies.Clear ();
+				GameController.gc.blastStorageDirection.enabled = true;
+				GameController.gc.showInitDirectionsFrames = 120;
 			}
+			GameController.gc.audioPlayer.clip = GameController.gc.pickup;
+			GameController.gc.audioPlayer.Play ();
 			Destroy(this.gameObject);
 		}
 	}

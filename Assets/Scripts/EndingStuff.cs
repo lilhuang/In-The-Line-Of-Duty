@@ -12,6 +12,8 @@ public class EndingStuff : MonoBehaviour {
 	public Text newTiedScore;
 	public Text score;
 
+	public AudioSource audioPlayer;
+
 	public int numFramesBeforeHighScore;
 	public int numFramesBeforeTiedScore;
 	public int numFramesBeforeFail;
@@ -34,10 +36,10 @@ public class EndingStuff : MonoBehaviour {
 		}
 		if (GameController.gc.num_points == maxScore) {
 			numFramesBeforeHighScore = 0;
-			numFramesBeforeTiedScore = 12;
+			numFramesBeforeTiedScore = 60;
 			canAcceptInput = false;
 		} else if (GameController.gc.num_points > maxScore) {
-			numFramesBeforeHighScore = 12;
+			numFramesBeforeHighScore = 60;
 			numFramesBeforeTiedScore = 0;
 			canAcceptInput = false;
 		} else {
@@ -66,6 +68,7 @@ public class EndingStuff : MonoBehaviour {
 				score.enabled = true;
 				score.GetComponent<ScoreIncrease> ().IncrementScore ();
 				canAcceptInput = true;
+				audioPlayer.Play ();
 			}
 		} else if (numFramesBeforeTiedScore > 0) {
 			numFramesBeforeTiedScore--;
@@ -78,6 +81,7 @@ public class EndingStuff : MonoBehaviour {
 				score.enabled = true;
 				score.GetComponent<ScoreIncrease> ().IncrementScore ();
 				canAcceptInput = true;
+				audioPlayer.Play ();
 			}
 		}
 

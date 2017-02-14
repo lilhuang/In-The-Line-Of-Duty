@@ -21,7 +21,41 @@ public class GameController : MonoBehaviour {
 	public float restart_delay;
 	public int num_blasts;
 	public float[] prob_enemy; //0 is Enemy, 1 is Enemy1, 2 is Enemy2, etc.
-	public float[] prob_pickup; //0 is pt+5, 1 is pt+10, 2 is pt+50, 3 is pb+5, 4 is pb+10, 5 is pbx2
+	public float[] prob_pickup; //0 is pt+5, 1 is pt+10, 2 is pt+50, 3 is pb+5, 4 is pb+10, 5 is pbx2, 6 is blast
+	public int pickup_drop_prob;
+	public float showInitDirectionsFrames;
+	public int remainingDamageFrames = 0; //Damagge frames left
+	public int remainingDamageFlashes = 0;
+	public int showDamageForFrames = 10;
+	public bool hasDroppedBlockedEnemy;
+	public bool hasDroppedEncircledEnemy;
+	public bool hasShownBlockIncrease;
+	public bool hasShownEncircleIncrease;
+	public bool hasDroppedP5;
+	public bool hasDroppedP10;
+	public bool hasDroppedP50;
+	public bool hasDroppedC5;
+	public bool hasDroppedC10;
+	public bool hasDroppedC2;
+	public bool hasDroppedBlast;
+
+	public bool startSpawning;
+
+	public Text drawLineDirection;
+	public Text keepInScreen;
+	public Text howGameEnds;
+	public Text blockDirection;
+	public Text encircleDirection;
+	public Text pointIncreaseDirection_block;
+	public Text pointIncreaseDirection_encircle;
+	public Text encirclePickupDirection_pt_five;
+	public Text encirclePickupDirection_pt_ten;
+	public Text encirclePickupDirection_pt_fifty;
+	public Text encirclePickupDirection_c_five;
+	public Text encirclePickupDirection_c_ten;
+	public Text encirclePickupDirection_cxtwo;
+	public Text encirclePickupDirection_blast;
+	public Text blastStorageDirection;
 
 	public List<GameObject> lines;
 	public List<GameObject> plebs;
@@ -41,15 +75,27 @@ public class GameController : MonoBehaviour {
 	public GameObject pickup_pb_five_prefab;
 	public GameObject pickup_pb_ten_prefab;
 	public GameObject pickup_pbxtwo_prefab;
+	public GameObject pickup_blast;
+	public GameObject arrow;
+
+	public AudioSource audioPlayer;
+	public AudioClip pickup;
+	public AudioClip collide;
+	public AudioClip morePoints;
+	public AudioClip died;
+	public AudioClip hitEnemy;
 
 	public Text num_plebs_text;
 	public Text points_text;
+	public Text num_blasts_text;
 
 	public TextAsset scores;
 	public string player_name;
 
 	void Start() {
 		gc = this;
+		//player_name = Directions.d.player_name;
+		//print (player_name);
 		restart_delay = 6f;
 		delete_delay_value = 12f;
 		delete_delay = delete_delay_value;
@@ -62,19 +108,24 @@ public class GameController : MonoBehaviour {
 		pleb_init_spot = Vector3.zero;
 		pleb_init_spot_radius = 20f;
 		num_blasts = 0;
+		pickup_drop_prob = 200;
+		showInitDirectionsFrames = 150;
+		prev_scores = new Dictionary<string, int> ();
+		startSpawning = false;
 		prob_enemy = new float[4];
 		prob_enemy [0] = 1f;
 		prob_enemy [1] = 0f;
 		prob_enemy [2] = 0f;
 		prob_enemy [3] = 0f;
 
-		prob_pickup = new float[6];
+		prob_pickup = new float[7];
 		prob_pickup [0] = 0.4f;
 		prob_pickup [1] = 0.3f;
 		prob_pickup [2] = 0.0f;
 		prob_pickup [3] = 0.3f;
 		prob_pickup [4] = 0f;
 		prob_pickup [5] = 0f;
+		prob_pickup [6] = 0f;
 
 		for (int i = 0; i < num_init_plebs; i++) {
 			GameObject go = Instantiate (pleb_prefab) as GameObject;
@@ -84,16 +135,30 @@ public class GameController : MonoBehaviour {
 			plebs.Add (go);
 		}
 		if (scores.text != "") {
-			string[] lines = scores.text.Split('\n');
+			string[] lines = scores.text.Split ('\n');
 			foreach (string line in lines) {
-				string[] this_line = scores.text.Split(' ');
+				string[] this_line = scores.text.Split (' ');
 				string name = this_line [0];
-				int score = Int32.Parse(this_line [1]);
+				int score = Int32.Parse (this_line [1]);
 				prev_scores.Add (name, score);
 			}
 		}
 
-		Invoke ("SpawnEnemies", enemySpawnRate);
+		drawLineDirection.enabled = true;
+		keepInScreen.enabled = false;
+		howGameEnds.enabled = false;
+		blockDirection.enabled = false;
+		encircleDirection.enabled = false;
+		pointIncreaseDirection_block.enabled = false;
+		pointIncreaseDirection_encircle.enabled = false;
+		encirclePickupDirection_pt_five.enabled = false;
+		encirclePickupDirection_pt_ten.enabled = false;
+		encirclePickupDirection_pt_fifty.enabled = false;
+		encirclePickupDirection_c_five.enabled = false;
+		encirclePickupDirection_c_ten.enabled = false;
+		encirclePickupDirection_cxtwo.enabled = false;
+		encirclePickupDirection_blast.enabled = false;
+		blastStorageDirection.enabled = false;
 	}
 
 	public void CreatePlebs(int num_new_plebs) {
@@ -115,11 +180,13 @@ public class GameController : MonoBehaviour {
 		}
 		ProcessLine ();
 		ManageLevel ();
-		SpawnPickups ();
 		ProcessBlast ();
+		if (startSpawning) {
+			SpawnPickups ();
+		}
 
-		print ("max segments is " + max_segments);
-		print ("num current segments is " + num_segments);
+		//print ("max segments is " + max_segments);
+		//print ("num current segments is " + num_segments);
 
 		if (plebs.Count == 0) {
 			print ("out of plebs");
@@ -136,9 +203,61 @@ public class GameController : MonoBehaviour {
 		}
 		points_text.text = "Points: " + num_points;
 		num_plebs_text.text = "Citizens left: " + plebs.Count;
+		num_blasts_text.text = "Blasts available: " + num_blasts;
+
+		if (showInitDirectionsFrames > 0) {
+			showInitDirectionsFrames--;
+			if (showInitDirectionsFrames == 0) {
+				if (drawLineDirection.enabled) {
+					drawLineDirection.enabled = false;
+					keepInScreen.enabled = true;
+					showInitDirectionsFrames = 150;
+				} else if (keepInScreen.enabled) {
+					keepInScreen.enabled = false;
+					howGameEnds.enabled = true;
+					showInitDirectionsFrames = 150;
+				} else if (howGameEnds.enabled) {
+					howGameEnds.enabled = false;
+					Invoke ("SpawnEnemies", enemySpawnRate);
+				} else if (blastStorageDirection.enabled) {
+					blastStorageDirection.enabled = false;
+				} else if (pointIncreaseDirection_block.enabled) {
+					pointIncreaseDirection_block.enabled = false;
+					pointIncreaseDirection_encircle.enabled = true;
+					showInitDirectionsFrames = 120;
+				} else if (pointIncreaseDirection_encircle.enabled) {
+					pointIncreaseDirection_encircle.enabled = false;
+				}
+			}
+		}
+
+		if (remainingDamageFlashes > 0) {
+			//print ("frame number: " + frame);
+			//print (remainingDamageFlashes + " damage flashes left");
+			if (remainingDamageFrames > 0) {
+				//print (remainingDamageFrames + " damage frames left");
+				remainingDamageFrames--;
+				if (remainingDamageFrames == showDamageForFrames / 2) {
+					//print ("no damage frames left!");
+					UnshowDamage ();
+				}
+			} else {
+				//print ("decreasing damage flashes left");
+				remainingDamageFlashes--;
+				ShowDamage (remainingDamageFlashes);
+			}
+		} else {
+			//print ("no damage flashes left!");
+			UnshowDamage ();
+		}
 	}
 
 	public void DeleteFirstSeg() {
+		if (lines.Count == 0) {
+			print ("out of lines");
+		} else if (lines [0].GetComponent<DrawLine> ().segmentsList.Count == 0) {
+			print ("out of segments");
+		}
 		GameObject first_seg = lines [0].GetComponent<DrawLine> ().segmentsList [0];
 		lines [0].GetComponent<DrawLine> ().segmentsList.Remove (first_seg);
 		Destroy (first_seg);
@@ -175,26 +294,71 @@ public class GameController : MonoBehaviour {
 	}
 
 	void SpawnPickups() {
-		int temp = UnityEngine.Random.Range (1, 500);
+		int temp = UnityEngine.Random.Range (1, pickup_drop_prob);
 		if (temp == 1) {
 			GameObject go;
-			float temp_index = UnityEngine.Random.Range (0, 1);
+			float temp_index = UnityEngine.Random.Range (0f, 1f);
+			print (temp_index);
 			if (temp_index <= prob_pickup [0]) {
 				go = Instantiate (pickup_pt_five_prefab) as GameObject;
-			} else if (temp_index <= (prob_pickup [0] + prob_pickup[1])) {
+				if (!hasDroppedP5) {
+					encirclePickupDirection_pt_five.enabled = true;
+					encirclePickupDirection_pt_five.GetComponent<DirectionFollowsObject> ().go_follow = go;
+					encirclePickupDirection_pt_five.GetComponent<DirectionFollowsObject> ().is_following = true;
+					hasDroppedP5 = true;
+				} 
+			} else if (temp_index <= (prob_pickup [0] + prob_pickup [1])) {
 				go = Instantiate (pickup_pt_ten_prefab) as GameObject;
-			} else if (temp_index <= (prob_pickup [0] + prob_pickup[1] + prob_pickup[2])) {
+				if (!hasDroppedP10) {
+					encirclePickupDirection_pt_ten.enabled = true;
+					encirclePickupDirection_pt_ten.GetComponent<DirectionFollowsObject> ().go_follow = go;
+					encirclePickupDirection_pt_ten.GetComponent<DirectionFollowsObject> ().is_following = true;
+					hasDroppedP10 = true;
+				} 
+			} else if (temp_index <= (prob_pickup [0] + prob_pickup [1] + prob_pickup [2])) {
 				go = Instantiate (pickup_pt_fifty_prefab) as GameObject;
-			} else if (temp_index <= (prob_pickup [0] + prob_pickup[1] + prob_pickup[2] + prob_pickup[3])) {
+				if (!hasDroppedP50) {
+					encirclePickupDirection_pt_fifty.enabled = true;
+					encirclePickupDirection_pt_fifty.GetComponent<DirectionFollowsObject> ().go_follow = go;
+					encirclePickupDirection_pt_fifty.GetComponent<DirectionFollowsObject> ().is_following = true;
+					hasDroppedP50 = true;
+				} 
+			} else if (temp_index <= (prob_pickup [0] + prob_pickup [1] + prob_pickup [2] + prob_pickup [3])) {
 				go = Instantiate (pickup_pb_five_prefab) as GameObject;
-			} else if (temp_index <= (prob_pickup [0] + prob_pickup[1] + prob_pickup[2] + prob_pickup[3] + prob_pickup[4])) {
+				if (!hasDroppedC5) {
+					encirclePickupDirection_c_five.enabled = true;
+					encirclePickupDirection_c_five.GetComponent<DirectionFollowsObject> ().go_follow = go;
+					encirclePickupDirection_c_five.GetComponent<DirectionFollowsObject> ().is_following = true;
+					hasDroppedC5 = true;
+				}
+			} else if (temp_index <= (prob_pickup [0] + prob_pickup [1] + prob_pickup [2] + prob_pickup [3] + prob_pickup [4])) {
 				go = Instantiate (pickup_pb_ten_prefab) as GameObject;
-			} else {
+				if (!hasDroppedC10) {
+					encirclePickupDirection_c_ten.enabled = true;
+					encirclePickupDirection_c_ten.GetComponent<DirectionFollowsObject> ().go_follow = go;
+					encirclePickupDirection_c_ten.GetComponent<DirectionFollowsObject> ().is_following = true;
+					hasDroppedC10 = true;
+				} 
+			} else if (temp_index <= (prob_pickup [0] + prob_pickup [1] + prob_pickup [2] + prob_pickup [3] + prob_pickup [4] + prob_pickup [5])) {
 				go = Instantiate (pickup_pbxtwo_prefab) as GameObject;
+				if (!hasDroppedC2) {
+					encirclePickupDirection_cxtwo.enabled = true;
+					encirclePickupDirection_cxtwo.GetComponent<DirectionFollowsObject> ().go_follow = go;
+					encirclePickupDirection_cxtwo.GetComponent<DirectionFollowsObject> ().is_following = true;
+					hasDroppedC2 = true;
+				}
+			} else {
+				go = Instantiate (pickup_blast) as GameObject;
+				if (!hasDroppedBlast) {
+					encirclePickupDirection_blast.enabled = true;
+					encirclePickupDirection_blast.GetComponent<DirectionFollowsObject> ().go_follow = go;
+					encirclePickupDirection_blast.GetComponent<DirectionFollowsObject> ().is_following = true;
+					hasDroppedBlast = true;
+				}
 			}
 			Vector3 pos = Vector3.zero;
-			float x = UnityEngine.Random.Range (Utils.camBounds.min.x, Utils.camBounds.max.x);
-			float y = UnityEngine.Random.Range (Utils.camBounds.min.y, Utils.camBounds.max.y);
+			float x = UnityEngine.Random.Range (Utils.camBounds.min.x + 5, Utils.camBounds.max.x - 5);
+			float y = UnityEngine.Random.Range (Utils.camBounds.min.y + 5, Utils.camBounds.max.y - 5);
 			pos.x = x;
 			pos.y = y;
 			go.transform.position = pos;
@@ -232,22 +396,50 @@ public class GameController : MonoBehaviour {
 		}
 		go.transform.position = pos;
 		enemies.Add (go);
+		if (!hasDroppedBlockedEnemy) {
+			blockDirection.enabled = true;
+			blockDirection.GetComponent<DirectionFollowsObject> ().go_follow = go;
+			blockDirection.GetComponent<DirectionFollowsObject> ().is_following = true;
+			hasDroppedBlockedEnemy = true;
+		} else if (!hasDroppedEncircledEnemy) {
+			encircleDirection.enabled = true;
+			encircleDirection.GetComponent<DirectionFollowsObject> ().go_follow = go;
+			encircleDirection.GetComponent<DirectionFollowsObject> ().is_following = true;
+			hasDroppedEncircledEnemy = true;
+			startSpawning = true;
+		}
 		Invoke("SpawnEnemies", enemySpawnRate);
 	}
 
 	void ManageLevel() {
-		if (num_points >= 50 && num_points < 100) {
+		if (num_points >= 20 && num_points < 50) {
 			max_segments = 75;
-		} else if (num_points >= 100 && num_points < 200) {
+		} else if (num_points >= 50 && num_points < 100) {
 			max_segments = 50;
 			enemySpawnRate = 3f;
 			prob_enemy [0] = 0.65f;
 			prob_enemy [1] = 0.2f;
 			prob_enemy [2] = 0f;
 			prob_enemy [3] = 0.15f;
-		} else if (num_points >= 200 && num_points < 500) {
+
+			prob_pickup [0] = 0.2f;
+			prob_pickup [1] = 0.2f;
+			prob_pickup [2] = 0.15f;
+			prob_pickup [3] = 0.2f;
+			prob_pickup [4] = 0.2f;
+			prob_pickup [5] = 0.05f;
+			prob_pickup [6] = 0f;
+		} else if (num_points >= 100 && num_points < 500) {
 			max_segments = 35;
+			enemySpawnRate = 2f;
 			delete_delay_value = 6f;
+			prob_pickup [0] = 0.2f;
+			prob_pickup [1] = 0.2f;
+			prob_pickup [2] = 0.13f;
+			prob_pickup [3] = 0.2f;
+			prob_pickup [4] = 0.2f;
+			prob_pickup [5] = 0.05f;
+			prob_pickup [6] = 0.02f;
 		} else if (num_points >= 500 && num_points < 1000) {
 			max_segments = 25;
 			prob_enemy [0] = 0.5f;
@@ -257,10 +449,36 @@ public class GameController : MonoBehaviour {
 		} else if (num_points >= 1000 && num_points < 5000) {
 			max_segments = 10;
 			enemySpawnRate = 1f;
+			prob_pickup [0] = 0.35f;
+			prob_pickup [1] = 0.35f;
+			prob_pickup [2] = 0.1f;
+			prob_pickup [3] = 0.05f;
+			prob_pickup [4] = 0.05f;
+			prob_pickup [5] = 0.05f;
+			prob_pickup [6] = 0.05f;
 		} else if (num_points >= 5000) {
 			max_segments = 5;
 			enemySpawnRate = 0.5f;
+			prob_pickup [0] = 0.2f;
+			prob_pickup [1] = 0.2f;
+			prob_pickup [2] = 0.15f;
+			prob_pickup [3] = 0.15f;
+			prob_pickup [4] = 0.15f;
+			prob_pickup [5] = 0.05f;
+			prob_pickup [6] = 0.1f;
 		}
+	}
+
+	public void ShowDamage(int flashes_left) {
+		print ("entered ShowDamage");
+		//receive_damage = false;
+		remainingDamageFlashes = flashes_left;
+		num_plebs_text.color = Color.red;
+		remainingDamageFrames = showDamageForFrames;
+	}
+
+	public void UnshowDamage() {
+		num_plebs_text.color = Color.white;
 	}
 
 	public void DelayedRestart(float delay) {
