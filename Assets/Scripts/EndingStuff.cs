@@ -32,7 +32,7 @@ public class EndingStuff : MonoBehaviour {
 		string name = "nobody";
 		using (StreamWriter outputfile = new StreamWriter ("Assets/Resources/scores.txt")) {
 			foreach (string key in GameController.gc.prev_scores.Keys) {
-				outputfile.WriteLine (key + " " + GameController.gc.prev_scores [key] + "\n");
+				outputfile.WriteLine (key + " " + GameController.gc.prev_scores [key]);
 				if (key != GameController.gc.player_name && GameController.gc.prev_scores [key] > maxScore) {
 					maxScore = GameController.gc.prev_scores [key];
 					name = key;
