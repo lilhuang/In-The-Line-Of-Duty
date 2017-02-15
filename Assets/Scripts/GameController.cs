@@ -27,6 +27,13 @@ public class GameController : MonoBehaviour {
 	public int remainingDamageFrames = 0; //Damagge frames left
 	public int remainingDamageFlashes = 0;
 	public int showDamageForFrames = 10;
+	public int remainingIncreaseFrames = 0; //Damagge frames left
+	public int remainingIncreaseFlashes = 0;
+	public int showIncreaseForFrames = 10;
+	public int remainingFlashFrames = 0;
+	public int remainingFlashFlashes = 0;
+	public int showFlashForFrames = 10;
+	public int bossEnemyDelay = 0;
 	public bool hasDroppedBlockedEnemy;
 	public bool hasDroppedEncircledEnemy;
 	public bool hasShownBlockIncrease;
@@ -56,6 +63,7 @@ public class GameController : MonoBehaviour {
 	public Text encirclePickupDirection_cxtwo;
 	public Text encirclePickupDirection_blast;
 	public Text blastStorageDirection;
+	public Text bossDirection;
 
 	public List<GameObject> lines;
 	public List<GameObject> plebs;
@@ -69,6 +77,7 @@ public class GameController : MonoBehaviour {
 	public GameObject enemy1_prefab;
 	public GameObject enemy2_prefab;
 	public GameObject enemy3_prefab;
+	public GameObject enemy4_prefab;
 	public GameObject pickup_pt_five_prefab;
 	public GameObject pickup_pt_ten_prefab;
 	public GameObject pickup_pt_fifty_prefab;
@@ -84,6 +93,7 @@ public class GameController : MonoBehaviour {
 	public AudioClip morePoints;
 	public AudioClip died;
 	public AudioClip hitEnemy;
+	public AudioClip breakLine;
 
 	public Text num_plebs_text;
 	public Text points_text;
@@ -92,10 +102,16 @@ public class GameController : MonoBehaviour {
 	public TextAsset scores;
 	public string player_name;
 
+	//public bool getNameFrom
+
 	void Start() {
 		gc = this;
-		//player_name = Directions.d.player_name;
-		//print (player_name);
+		//if (Directions.d != null) {
+		player_name = Directions.d.player_name;
+		print ("Player name " + player_name);
+//		} else {
+//			player_name = "none";
+//		}
 		restart_delay = 6f;
 		delete_delay_value = 12f;
 		delete_delay = delete_delay_value;
@@ -109,7 +125,7 @@ public class GameController : MonoBehaviour {
 		pleb_init_spot_radius = 20f;
 		num_blasts = 0;
 		pickup_drop_prob = 200;
-		showInitDirectionsFrames = 150;
+		showInitDirectionsFrames = 300;
 		prev_scores = new Dictionary<string, int> ();
 		startSpawning = false;
 		prob_enemy = new float[4];
@@ -137,11 +153,24 @@ public class GameController : MonoBehaviour {
 		if (scores.text != "") {
 			string[] lines = scores.text.Split ('\n');
 			foreach (string line in lines) {
-				string[] this_line = scores.text.Split (' ');
-				string name = this_line [0];
-				int score = Int32.Parse (this_line [1]);
-				prev_scores.Add (name, score);
+				if (line != "") {
+					string[] this_line = line.Split (' ');
+					string name = this_line [0];
+//					print ("this line " + line + "!!!");
+//					print ("name " + this_line [0] + ".");
+//					print ("number should be " + this_line [1] + ".");
+					int score = Int32.Parse (this_line [1]);
+					if (prev_scores.ContainsKey (name)) {
+						prev_scores [name] = score;
+					} else {
+						prev_scores.Add (name, score);
+					}
+				}
 			}
+		}
+
+		foreach (string key in prev_scores.Keys) {
+			print (key + " " + prev_scores [key]);
 		}
 
 		drawLineDirection.enabled = true;
@@ -159,6 +188,7 @@ public class GameController : MonoBehaviour {
 		encirclePickupDirection_cxtwo.enabled = false;
 		encirclePickupDirection_blast.enabled = false;
 		blastStorageDirection.enabled = false;
+		bossDirection.enabled = false;
 	}
 
 	public void CreatePlebs(int num_new_plebs) {
@@ -211,11 +241,15 @@ public class GameController : MonoBehaviour {
 				if (drawLineDirection.enabled) {
 					drawLineDirection.enabled = false;
 					keepInScreen.enabled = true;
-					showInitDirectionsFrames = 150;
+					showInitDirectionsFrames = 300;
 				} else if (keepInScreen.enabled) {
 					keepInScreen.enabled = false;
+					bossDirection.enabled = true;
+					showInitDirectionsFrames = 300;
+				} else if (bossDirection.enabled) {
+					bossDirection.enabled = false;
 					howGameEnds.enabled = true;
-					showInitDirectionsFrames = 150;
+					showInitDirectionsFrames = 300;
 				} else if (howGameEnds.enabled) {
 					howGameEnds.enabled = false;
 					Invoke ("SpawnEnemies", enemySpawnRate);
@@ -224,7 +258,7 @@ public class GameController : MonoBehaviour {
 				} else if (pointIncreaseDirection_block.enabled) {
 					pointIncreaseDirection_block.enabled = false;
 					pointIncreaseDirection_encircle.enabled = true;
-					showInitDirectionsFrames = 120;
+					showInitDirectionsFrames = 150;
 				} else if (pointIncreaseDirection_encircle.enabled) {
 					pointIncreaseDirection_encircle.enabled = false;
 				}
@@ -249,6 +283,55 @@ public class GameController : MonoBehaviour {
 		} else {
 			//print ("no damage flashes left!");
 			UnshowDamage ();
+		}
+
+		if (remainingIncreaseFlashes > 0) {
+			//print ("frame number: " + frame);
+			//print (remainingDamageFlashes + " damage flashes left");
+			if (remainingIncreaseFrames > 0) {
+				//print (remainingDamageFrames + " damage frames left");
+				remainingIncreaseFrames--;
+				if (remainingIncreaseFrames == showIncreaseForFrames / 2) {
+					//print ("no damage frames left!");
+					UnshowIncrease ();
+				}
+			} else {
+				//print ("decreasing damage flashes left");
+				remainingIncreaseFlashes--;
+				ShowIncrease (remainingIncreaseFlashes);
+			}
+		} else {
+			//print ("no damage flashes left!");
+			UnshowIncrease ();
+		}
+
+		if (remainingIncreaseFlashes == 0 && remainingIncreaseFrames == 0 
+			&& remainingDamageFrames == 0 && remainingDamageFlashes == 0) {
+			points_text.color = Color.white;
+		}
+
+		if (remainingFlashFlashes > 0) {
+			//print ("frame number: " + frame);
+			//print (remainingDamageFlashes + " damage flashes left");
+			if (remainingFlashFrames > 0) {
+				//print (remainingDamageFrames + " damage frames left");
+				remainingFlashFrames--;
+				if (remainingFlashFrames == showFlashForFrames / 2) {
+					//print ("no damage frames left!");
+					UnshowFlash ();
+				}
+			} else {
+				//print ("decreasing damage flashes left");
+				remainingFlashFlashes--;
+				ShowFlash (remainingFlashFlashes);
+			}
+		} else {
+			//print ("no damage flashes left!");
+			UnshowFlash ();
+		}
+
+		if (bossEnemyDelay > 0) {
+			bossEnemyDelay--;
 		}
 	}
 
@@ -366,33 +449,42 @@ public class GameController : MonoBehaviour {
 	}
 
 	void SpawnEnemies() {
-		float temp0 = UnityEngine.Random.Range (0f, 1f);
 		GameObject go;
-		if (temp0 <= prob_enemy [0]) {
-			go = Instantiate (enemy_prefab) as GameObject;
-		} else if (temp0 <= prob_enemy [0] + prob_enemy [1]) {
-			go = Instantiate (enemy1_prefab) as GameObject;
-		} else {
-			go = Instantiate (enemy2_prefab) as GameObject;
-		}
+		int idk = UnityEngine.Random.Range (1, 10);
 		Vector3 pos = Vector3.zero;
-		float xMin = Utils.camBounds.min.x - enemySpawnPadding;
-		float xMax = Utils.camBounds.max.x + enemySpawnPadding;
-		float yMin = Utils.camBounds.min.y - enemySpawnPadding;
-		float yMax = Utils.camBounds.max.y + enemySpawnPadding;
-		int temp = UnityEngine.Random.Range (0, 3);
-		if (temp == 0) {
-			pos.x = UnityEngine.Random.Range (xMin, xMax);
-			pos.y = UnityEngine.Random.Range (Utils.camBounds.max.y, yMax);
-		} else if (temp == 1) {
-			pos.x = UnityEngine.Random.Range (xMin, xMax);
-			pos.y = UnityEngine.Random.Range (yMin, Utils.camBounds.min.y);
-		} else if (temp == 2) {
-			pos.x = UnityEngine.Random.Range (Utils.camBounds.max.x, xMax);
-			pos.y = UnityEngine.Random.Range (yMin, yMax);
-		} else if (temp == 3) {
-			pos.x = UnityEngine.Random.Range (xMin, Utils.camBounds.min.x);
-			pos.y = UnityEngine.Random.Range (yMin, yMax);
+		if (plebs.Count > 10 && idk == 1 && bossEnemyDelay == 0) {
+			go = Instantiate (enemy4_prefab) as GameObject;
+			pos.x = Utils.camBounds.min.x - 2f;
+			pos.y = UnityEngine.Random.Range (Utils.camBounds.min.y + 5f, Utils.camBounds.max.y - 5f);
+		} else {
+			float temp0 = UnityEngine.Random.Range (0f, 1f);
+			if (temp0 <= prob_enemy [0]) {
+				go = Instantiate (enemy_prefab) as GameObject;
+			} else if (temp0 <= prob_enemy [0] + prob_enemy [1]) {
+				go = Instantiate (enemy1_prefab) as GameObject;
+			} else if (temp0 <= prob_enemy [0] + prob_enemy [1] + prob_enemy [2]) {
+				go = Instantiate (enemy2_prefab) as GameObject;
+			} else {
+				go = Instantiate (enemy3_prefab) as GameObject;
+			}
+			float xMin = Utils.camBounds.min.x - enemySpawnPadding;
+			float xMax = Utils.camBounds.max.x + enemySpawnPadding;
+			float yMin = Utils.camBounds.min.y - enemySpawnPadding;
+			float yMax = Utils.camBounds.max.y + enemySpawnPadding;
+			int temp = UnityEngine.Random.Range (0, 3);
+			if (temp == 0) {
+				pos.x = UnityEngine.Random.Range (xMin, xMax);
+				pos.y = UnityEngine.Random.Range (Utils.camBounds.max.y, yMax);
+			} else if (temp == 1) {
+				pos.x = UnityEngine.Random.Range (xMin, xMax);
+				pos.y = UnityEngine.Random.Range (yMin, Utils.camBounds.min.y);
+			} else if (temp == 2) {
+				pos.x = UnityEngine.Random.Range (Utils.camBounds.max.x, xMax);
+				pos.y = UnityEngine.Random.Range (yMin, yMax);
+			} else if (temp == 3) {
+				pos.x = UnityEngine.Random.Range (xMin, Utils.camBounds.min.x);
+				pos.y = UnityEngine.Random.Range (yMin, yMax);
+			}
 		}
 		go.transform.position = pos;
 		enemies.Add (go);
@@ -429,7 +521,7 @@ public class GameController : MonoBehaviour {
 			prob_pickup [4] = 0.2f;
 			prob_pickup [5] = 0.05f;
 			prob_pickup [6] = 0f;
-		} else if (num_points >= 100 && num_points < 500) {
+		} else if (num_points >= 100 && num_points < 200) {
 			max_segments = 35;
 			enemySpawnRate = 2f;
 			delete_delay_value = 6f;
@@ -440,13 +532,13 @@ public class GameController : MonoBehaviour {
 			prob_pickup [4] = 0.2f;
 			prob_pickup [5] = 0.05f;
 			prob_pickup [6] = 0.02f;
-		} else if (num_points >= 500 && num_points < 1000) {
+		} else if (num_points >= 200 && num_points < 300) {
 			max_segments = 25;
-			prob_enemy [0] = 0.5f;
+			prob_enemy [0] = 0.4f;
 			prob_enemy [1] = 0.2f;
 			prob_enemy [2] = 0.2f;
-			prob_enemy [3] = 0.1f;
-		} else if (num_points >= 1000 && num_points < 5000) {
+			prob_enemy [3] = 0.2f;
+		} else if (num_points >= 300 && num_points < 500) {
 			max_segments = 10;
 			enemySpawnRate = 1f;
 			prob_pickup [0] = 0.35f;
@@ -456,7 +548,7 @@ public class GameController : MonoBehaviour {
 			prob_pickup [4] = 0.05f;
 			prob_pickup [5] = 0.05f;
 			prob_pickup [6] = 0.05f;
-		} else if (num_points >= 5000) {
+		} else if (num_points >= 500) {
 			max_segments = 5;
 			enemySpawnRate = 0.5f;
 			prob_pickup [0] = 0.2f;
@@ -474,11 +566,42 @@ public class GameController : MonoBehaviour {
 		//receive_damage = false;
 		remainingDamageFlashes = flashes_left;
 		num_plebs_text.color = Color.red;
+		points_text.color = Color.red;
 		remainingDamageFrames = showDamageForFrames;
 	}
 
 	public void UnshowDamage() {
 		num_plebs_text.color = Color.white;
+		if (remainingIncreaseFrames <= showIncreaseForFrames / 2) {
+			points_text.color = Color.white;
+		}
+
+	}
+
+	public void ShowIncrease(int flashes_left) {
+		print ("entered ShowIncrease");
+		//receive_damage = false;
+		remainingIncreaseFlashes = flashes_left;
+		points_text.color = Color.cyan;
+		remainingIncreaseFrames = showIncreaseForFrames;
+	}
+
+	public void UnshowIncrease() {
+		if (remainingDamageFrames <= showDamageForFrames / 2) {
+			points_text.color = Color.white;
+		}
+	}
+
+	public void ShowFlash(int flashes_left) {
+		print ("entered ShowFlash");
+		//receive_damage = false;
+		remainingFlashFlashes = flashes_left;
+		num_blasts_text.color = Color.cyan;
+		remainingFlashFrames = showFlashForFrames;
+	}
+
+	public void UnshowFlash() {
+		num_blasts_text.color = Color.white;
 	}
 
 	public void DelayedRestart(float delay) {

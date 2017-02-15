@@ -7,6 +7,7 @@ public class TypeText1 : MonoBehaviour {
 	public string full_text;
 	public int index;
 	public char[] textchars;
+	public bool typing;
 
 	public Text direction;
 
@@ -16,6 +17,7 @@ public class TypeText1 : MonoBehaviour {
 		direction.text = "";
 		index = 0;
 		textchars = full_text.ToCharArray ();
+		typing = false;
 	}
 
 	// Use this for initialization
@@ -36,7 +38,7 @@ public class TypeText1 : MonoBehaviour {
 		if (index < textchars.Length) {
 			direction.text += textchars [index];
 			index++;
-			Invoke ("AddLetter", 0.05f);
+			Invoke ("AddLetter", 0.03f);
 		}
 	}
 }

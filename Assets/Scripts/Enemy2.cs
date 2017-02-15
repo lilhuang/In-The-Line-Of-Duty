@@ -8,6 +8,7 @@ public class Enemy2 : MonoBehaviour {
 	public float resetTargetDelay;
 	public int total_cooldown_frames;
 	public int num_cooldown_frames;
+	public bool canIncreasePoints;
 
 	public float search_radius = 20f;
 	public Vector3[] directions;
@@ -24,6 +25,7 @@ public class Enemy2 : MonoBehaviour {
 		directions = all_directions ();
 		num_cooldown_frames = 0;
 		total_cooldown_frames = 24;
+		canIncreasePoints = true;
 	}
 
 	// Update is called once per frame
@@ -77,6 +79,7 @@ public class Enemy2 : MonoBehaviour {
 			GameController.gc.enemies.Remove(this.gameObject);
 			Destroy(this.gameObject);
 			GameController.gc.num_points += 5;
+			GameController.gc.ShowIncrease (5);
 		}
 
 	}
@@ -93,10 +96,40 @@ public class Enemy2 : MonoBehaviour {
 			GameController.gc.num_points += 1;
 			num_cooldown_frames = total_cooldown_frames;
 			GetComponent<Rigidbody> ().velocity *= -1;
+			GameController.gc.audioPlayer.clip = GameController.gc.morePoints;
+			GameController.gc.audioPlayer.Play ();
+			canIncreasePoints = false;
+			if (!GameController.gc.hasShownBlockIncrease) {
+				GameController.gc.pointIncreaseDirection_block.enabled = true;
+				GameController.gc.hasShownBlockIncrease = true;
+				GameController.gc.showInitDirectionsFrames = 120;
+			}
+			GameController.gc.ShowIncrease (5);
 		} else if (coll.gameObject.tag == "Pleb" && num_cooldown_frames == 0) {
 			print ("hit a pleb");
+			coll.gameObject.GetComponent<Pleb> ().ShowDamage (5);
+			coll.gameObject.GetComponent<Pleb> ().health--;
+			GameController.gc.audioPlayer.clip = GameController.gc.hitEnemy;
+			GameController.gc.audioPlayer.Play ();
 			GetComponent<Rigidbody> ().velocity *= -1;
 			target = new Vector3 (-1f, -1f, -1f);
+		}
+	}
+
+	void OnCollisionLeave(Collision coll) {
+		if (coll.gameObject.tag == "Line") {
+			canIncreasePoints = true;
+		}
+	}
+
+	void OnTriggerEnter(Collider coll) {
+		if (coll.gameObject.tag == "Enemy4") {
+			Destroy (this.gameObject);
+			GameController.gc.enemies.Remove(this.gameObject);
+			GameController.gc.num_points += 5;
+			GameController.gc.audioPlayer.clip = GameController.gc.morePoints;
+			GameController.gc.audioPlayer.Play ();
+			GameController.gc.ShowIncrease (5);
 		}
 	}
 

@@ -12,7 +12,7 @@ public class DirectionFollowsObject : MonoBehaviour {
 	// Use this for initialization
 	void Start () {
 		is_following = false;
-		framesAlive = 120;
+		framesAlive = 300;
 	}
 	
 	// Update is called once per frame

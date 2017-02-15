@@ -19,15 +19,20 @@ public class EndingStuff : MonoBehaviour {
 	public int numFramesBeforeFail;
 
 	public bool canAcceptInput;
+	public bool doneShowing;
+
+	public static EndingStuff ending;
 
 
 	// Use this for initialization
 	void Start () {
+		doneShowing = false;
+		ending = this;
 		int maxScore = 0;
 		string name = "nobody";
 		using (StreamWriter outputfile = new StreamWriter ("Assets/Resources/scores.txt")) {
 			foreach (string key in GameController.gc.prev_scores.Keys) {
-				outputfile.WriteLine (key + " " + GameController.gc.prev_scores [key]);
+				outputfile.WriteLine (key + " " + GameController.gc.prev_scores [key] + "\n");
 				if (key != GameController.gc.player_name && GameController.gc.prev_scores [key] > maxScore) {
 					maxScore = GameController.gc.prev_scores [key];
 					name = key;
@@ -42,8 +47,6 @@ public class EndingStuff : MonoBehaviour {
 			numFramesBeforeHighScore = 60;
 			numFramesBeforeTiedScore = 0;
 			canAcceptInput = false;
-		} else {
-			canAcceptInput = true;
 		}
 		numFramesBeforeFail = 0;
 
@@ -57,31 +60,22 @@ public class EndingStuff : MonoBehaviour {
 	
 	// Update is called once per frame
 	void Update () {
-		if (numFramesBeforeHighScore > 0) {
-			numFramesBeforeHighScore--;
-			if (numFramesBeforeHighScore == 0) {
-				lost.enabled = false;
-				newHighScore.enabled = true;
-				score.text = "0";
-				score.GetComponent<ScoreIncrease> ().number = 0;
-				score.GetComponent<ScoreIncrease> ().finalScore = GameController.gc.num_points;
-				score.enabled = true;
-				score.GetComponent<ScoreIncrease> ().IncrementScore ();
-				canAcceptInput = true;
-				audioPlayer.Play ();
-			}
-		} else if (numFramesBeforeTiedScore > 0) {
-			numFramesBeforeTiedScore--;
-			if (numFramesBeforeTiedScore == 0) {
-				lost.enabled = false;
-				newTiedScore.enabled = true;
-				score.text = "0";
-				score.GetComponent<ScoreIncrease> ().number = 0;
-				score.GetComponent<ScoreIncrease> ().finalScore = GameController.gc.num_points;
-				score.enabled = true;
-				score.GetComponent<ScoreIncrease> ().IncrementScore ();
-				canAcceptInput = true;
-				audioPlayer.Play ();
+		if (!doneShowing) {
+			if (numFramesBeforeHighScore > 0) {
+				numFramesBeforeHighScore--;
+				if (numFramesBeforeHighScore == 0) {
+					ChangeScoreTextNewHigh ();
+					doneShowing = true;
+				}
+			} else if (numFramesBeforeTiedScore > 0) {
+				numFramesBeforeTiedScore--;
+				if (numFramesBeforeTiedScore == 0) {
+					ChangeScoreTextTied ();
+					doneShowing = true;
+				}
+			} else {
+				ChangeScoreTextRegular ();
+				doneShowing = true;
 			}
 		}
 
@@ -91,5 +85,35 @@ public class EndingStuff : MonoBehaviour {
 			SceneManager.LoadScene ("OpeningScene");
 		}
 		
+	}
+
+	void ChangeScoreTextNewHigh() {
+		lost.enabled = false;
+		newHighScore.enabled = true;
+		score.text = "Your score: 0";
+		//score.GetComponent<ScoreIncrease> ().number = 0;
+		score.GetComponent<ScoreIncrease> ().finalScore = GameController.gc.num_points;
+		score.enabled = true;
+		score.GetComponent<ScoreIncrease> ().incrementing = true;
+		audioPlayer.Play ();
+	}
+
+	void ChangeScoreTextTied() {
+		lost.enabled = false;
+		newHighScore.enabled = true;
+		score.text = "Your score: 0";
+		//score.GetComponent<ScoreIncrease> ().number = 0;
+		score.GetComponent<ScoreIncrease> ().finalScore = GameController.gc.num_points;
+		score.enabled = true;
+		score.GetComponent<ScoreIncrease> ().incrementing = true;
+		audioPlayer.Play ();
+	}
+
+	void ChangeScoreTextRegular() {
+		score.text = "Your score: 0";
+		//score.GetComponent<ScoreIncrease> ().number = 0;
+		score.GetComponent<ScoreIncrease> ().finalScore = GameController.gc.num_points;
+		score.enabled = true;
+		score.GetComponent<ScoreIncrease> ().incrementing = true;
 	}
 }

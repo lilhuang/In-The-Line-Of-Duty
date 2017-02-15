@@ -15,7 +15,7 @@ public class LineSegment : MonoBehaviour {
 		//nope need to find the correct length...
 		gameObject.transform.localScale = new Vector3 (between.magnitude, 1f, 1f);
 		gameObject.transform.rotation = Quaternion.Euler (0f, 0f, Mathf.Rad2Deg * Mathf.Atan (between.y / between.x));
-		gameObject.GetComponent<BoxCollider> ().size = new Vector3(between.magnitude, 1f, 1f);
+		//gameObject.GetComponent<BoxCollider> ().size = new Vector3(between.magnitude, 1f, 1f);
 		gameObject.GetComponent<BoxCollider> ().transform.rotation = Quaternion.Euler (0f, 0f, Mathf.Rad2Deg * Mathf.Atan (between.y / between.x));
 	}
 

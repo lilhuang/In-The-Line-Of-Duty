@@ -22,6 +22,7 @@ public class Directions : MonoBehaviour {
 	// Use this for initialization
 	void Start () {
 		d = this;
+		player_name = "Name";
 		titleImage.enabled = true;
 		pressEnter1.enabled = true;
 
@@ -42,9 +43,9 @@ public class Directions : MonoBehaviour {
 			if (titleImage.enabled && pressEnter1.enabled) {
 				titleImage.enabled = false;
 				pressEnter1.enabled = false;
-
-//				player_name = GUI.TextField (new Rect (10, 10, 200, 20), player_name, 50);
+				//player_name = GUI.TextField (new Rect (10, 10, 200, 20), player_name, 50);
 				Directions0.enabled = true;
+				Directions0.GetComponent<TypeText1> ().typing = true;
 				Directions0.GetComponent<TypeText1> ().StartTyping ();
 				pressEnter2.enabled = true;
 			} else if (Directions0.enabled && pressEnter2.enabled) {
@@ -71,7 +72,7 @@ public class Directions : MonoBehaviour {
 				Directions6.GetComponent<TypeText1> ().StartTyping ();
 				pressEnter3.enabled = true;
 			} else if (pressEnter3.enabled && Directions6.enabled) {
-				DelayedRestart (2f);
+				DelayedRestart (1f);
 			}
 		}
 	}
@@ -80,7 +81,7 @@ public class Directions : MonoBehaviour {
 		if (!titleImage.enabled && !pressEnter1.enabled && !Directions1.enabled && !Directions2.enabled
 		    && !Directions3.enabled && !Directions5.enabled && !Directions6.enabled
 		    && pressEnter2.enabled && !pressEnter3.enabled) {
-			player_name = GUI.TextField (new Rect (175, 150, 200, 20), player_name, 50);
+			player_name = GUI.TextField (new Rect (575, 350, 200, 20), player_name, 50);
 		}
 	}
 

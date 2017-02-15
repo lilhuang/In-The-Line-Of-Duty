@@ -54,7 +54,7 @@ public class Pleb : MonoBehaviour {
 		//theta = Mathf.Rad2Deg * Mathf.Acos (tempDir.x);
 		//print ("current theta " + theta);
 
-		if (changeDirectionDelay > 0) {
+		if (cooldownFrames == 0 && changeDirectionDelay > 0) {
 			changeDirectionDelay--;
 			if (changeDirectionDelay == 0) {
 				changeDirectionDelay = Random.Range (3, 10);
@@ -68,6 +68,21 @@ public class Pleb : MonoBehaviour {
 				rb.velocity = new Vector3 (driftSpeed * Mathf.Cos (Mathf.Deg2Rad * theta),
 					driftSpeed * Mathf.Sin (Mathf.Deg2Rad * theta), 0f);
 			}
+		}
+
+		if (health <= 0) {
+			foreach (GameObject go in enemiesTargetingMe) {
+				if (go != null) {
+					go.GetComponent<Enemy> ().target = new Vector3 (-1f, -1f, -1f);
+				}
+			}
+			enemiesTargetingMe.Clear ();
+			GameController.gc.plebs.Remove (this.gameObject);
+			Destroy (this.gameObject);
+			GameController.gc.num_points -= 5;
+			GameController.gc.audioPlayer.clip = GameController.gc.died;
+			GameController.gc.audioPlayer.Play ();
+			GameController.gc.ShowDamage (5);
 		}
 
 		if (remainingDamageFlashes > 0) {
@@ -96,35 +111,52 @@ public class Pleb : MonoBehaviour {
 	}
 
 	void OnCollisionEnter(Collision coll) {
-		rb.velocity *= -1;
+		//rb.velocity *= -1f;
 		theta = (theta + 180) % 360;
+		cooldownFrames = 24;
 		audio.clip = GameController.gc.collide;
 		audio.Play ();
 		if (coll.gameObject.tag == "Enemy" && cooldownFrames == 0) {
-			ShowDamage (5);
-			health--;
+			//ShowDamage (5);
+			//health--;
 			//canGetHurt = false;
-			cooldownFrames = 24;
-			if (health <= 0) {
-				foreach (GameObject go in enemiesTargetingMe) {
-					if (go != null) {
-						go.GetComponent<Enemy> ().target = new Vector3 (-1f, -1f, -1f);
-					}
-				}
-				enemiesTargetingMe.Clear ();
-				GameController.gc.plebs.Remove (this.gameObject);
-				Destroy (this.gameObject);
-				GameController.gc.num_points -= 5;
-				GameController.gc.audioPlayer.clip = GameController.gc.died;
-				GameController.gc.audioPlayer.Play ();
-				GameController.gc.ShowDamage (5);
-			}
+//			if (health <= 0) {
+//				foreach (GameObject go in enemiesTargetingMe) {
+//					if (go != null) {
+//						go.GetComponent<Enemy> ().target = new Vector3 (-1f, -1f, -1f);
+//					}
+//				}
+//				enemiesTargetingMe.Clear ();
+//				GameController.gc.plebs.Remove (this.gameObject);
+//				Destroy (this.gameObject);
+//				GameController.gc.num_points -= 5;
+//				GameController.gc.audioPlayer.clip = GameController.gc.died;
+//				GameController.gc.audioPlayer.Play ();
+//				GameController.gc.ShowDamage (5);
+//			}
 		}
 	}
 
 	void OnCollisionLeave(Collision coll) {
 		if (coll.gameObject.tag == "Enemy") {
 			//canGetHurt = true;
+		}
+	}
+
+	void OnTriggerEnter(Collider coll) {
+		if (coll.gameObject.tag == "Enemy4") {
+			foreach (GameObject go in enemiesTargetingMe) {
+				if (go != null) {
+					go.GetComponent<Enemy> ().target = new Vector3 (-1f, -1f, -1f);
+				}
+			}
+			enemiesTargetingMe.Clear ();
+			GameController.gc.plebs.Remove (this.gameObject);
+			Destroy (this.gameObject);
+			GameController.gc.num_points -= 5;
+			GameController.gc.audioPlayer.clip = GameController.gc.died;
+			GameController.gc.audioPlayer.Play ();
+			GameController.gc.ShowDamage (5);
 		}
 	}
 
@@ -148,7 +180,7 @@ public class Pleb : MonoBehaviour {
 		}
 	}
 
-	void ShowDamage(int flashes_left) {
+	public void ShowDamage(int flashes_left) {
 		//print ("entered ShowDamage");
 		//receive_damage = false;
 		remainingDamageFlashes = flashes_left;
@@ -158,7 +190,7 @@ public class Pleb : MonoBehaviour {
 		remainingDamageFrames = showDamageForFrames;
 	}
 
-	void UnshowDamage() {
+	public void UnshowDamage() {
 		for (int i = 0; i < materials.Length; i++) {
 			materials [i].color = originalColors [i];
 		}

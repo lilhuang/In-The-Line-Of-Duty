@@ -60,10 +60,13 @@ public class Pickup : MonoBehaviour {
 			//also do whatever it is else that you need to do like add more plebs or whatever
 			if (this.gameObject.tag == "pt+5") {
 				GameController.gc.num_points += 5;
+				GameController.gc.ShowIncrease (5);
 			} else if (this.gameObject.tag == "pt+10") {
 				GameController.gc.num_points += 10;
+				GameController.gc.ShowIncrease (5);
 			} else if (this.gameObject.tag == "pt+50") {
 				GameController.gc.num_points += 50;
+				GameController.gc.ShowIncrease (5);
 			} else if (this.gameObject.tag == "pb+5") {
 				GameController.gc.CreatePlebs (5);
 			} else if (this.gameObject.tag == "pb+10") {

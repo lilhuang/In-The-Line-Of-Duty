@@ -8,6 +8,7 @@ public class Enemy3 : MonoBehaviour {
 	public float resetTargetDelay;
 	public int total_cooldown_frames;
 	public int num_cooldown_frames;
+	public bool canIncreasePoints;
 
 	public float search_radius = 20f;
 	public Vector3[] directions;
@@ -24,6 +25,7 @@ public class Enemy3 : MonoBehaviour {
 		directions = all_directions ();
 		num_cooldown_frames = 0;
 		total_cooldown_frames = 24;
+		canIncreasePoints = true;
 	}
 
 	// Update is called once per frame
@@ -74,6 +76,7 @@ public class Enemy3 : MonoBehaviour {
 			GameController.gc.num_points += 5;
 			GameController.gc.audioPlayer.clip = GameController.gc.morePoints;
 			GameController.gc.audioPlayer.Play ();
+			GameController.gc.ShowIncrease (5);
 		}
 
 	}
@@ -117,12 +120,35 @@ public class Enemy3 : MonoBehaviour {
 			}
 			line_coll.GetComponent<DrawLine> ().segmentsList.Clear();
 			Destroy (line_coll);
+			canIncreasePoints = false;
+			GameController.gc.audioPlayer.clip = GameController.gc.breakLine;
+			GameController.gc.audioPlayer.Play ();
+			GameController.gc.ShowIncrease (5);
 		} else if (coll.gameObject.tag == "Pleb" && num_cooldown_frames == 0) {
 			print ("hit a pleb");
+			coll.gameObject.GetComponent<Pleb> ().ShowDamage (5);
+			coll.gameObject.GetComponent<Pleb> ().health--;
 			GetComponent<Rigidbody> ().velocity *= -1;
 			target = new Vector3 (-1f, -1f, -1f);
 			GameController.gc.audioPlayer.clip = GameController.gc.hitEnemy;
 			GameController.gc.audioPlayer.Play ();
+		}
+	}
+
+	void OnCollisionLeave(Collision coll) {
+		if (coll.gameObject.tag == "Line") {
+			canIncreasePoints = true;
+		}
+	}
+
+	void OnTriggerEnter(Collider coll) {
+		if (coll.gameObject.tag == "Enemy4") {
+			Destroy (this.gameObject);
+			GameController.gc.enemies.Remove(this.gameObject);
+			GameController.gc.num_points += 5;
+			GameController.gc.audioPlayer.clip = GameController.gc.morePoints;
+			GameController.gc.audioPlayer.Play ();
+			GameController.gc.ShowIncrease (5);
 		}
 	}
 
